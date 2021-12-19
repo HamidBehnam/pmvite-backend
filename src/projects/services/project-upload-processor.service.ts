@@ -23,7 +23,7 @@ class ProjectUploadProcessorService {
         );
 
         const fileOptions: FileOptions = {
-            gridFSBucketOpenUploadStreamOptions: {
+            gridFSBucketWriteStreamOptions: {
                 metadata: {
                     project: projectAuthorization.project._id
                 }

@@ -3,7 +3,7 @@ import {MulterError} from "multer";
 import {ValidationError} from "joi";
 
 class ErrorHandlerService {
-    getStatusCode(error: Error): number {
+    getStatusCode(error: unknown): number {
 
         if (error instanceof NotFoundError) {
             return 404;

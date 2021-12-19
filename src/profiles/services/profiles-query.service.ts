@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+import { PipelineStage, Types } from 'mongoose';
 import { queryService } from '../../common/services/query.service';
 import { ProjectMemberRole, UserStatistic, WorkStatus } from '../../common/types/enums';
 
@@ -43,7 +43,7 @@ class ProfilesQueryService {
         ];
     }
 
-    private static getProfilesReferenceQuery() {
+    private static getProfilesReferenceQuery(): PipelineStage[] {
         return [
             {
                 $lookup: {
@@ -65,7 +65,7 @@ class ProfilesQueryService {
                             }
                         },
                         ...ProfilesQueryService.getProjectsAggregateQuery(),
-                        { $project: { _id: 1, title: 1, project: 1 } }
+                        { $project: { title: 1, project: 1 } }
                     ],
                     as: 'acceptedTasks'
                 }
@@ -90,7 +90,7 @@ class ProfilesQueryService {
                             }
                         },
                         ...ProfilesQueryService.getProjectsAggregateQuery(),
-                        { $project: { _id: 1, title: 1, project: 1 } }
+                        { $project: { title: 1, project: 1 } }
                     ],
                     as: 'activeTasks'
                 }
@@ -107,7 +107,7 @@ class ProfilesQueryService {
                                 }
                             }
                         },
-                        { $project: { _id: 1, title: 1 } }
+                        { $project: { title: 1 } }
                     ],
                     as: 'createdProjects'
                 }
@@ -156,7 +156,7 @@ class ProfilesQueryService {
         ];
     }
 
-    private static getProjectsAggregateQuery() {
+    private static getProjectsAggregateQuery(): Exclude<PipelineStage, PipelineStage.Merge | PipelineStage.Out | PipelineStage.Search>[] {
         return [
             {
                 $lookup: {
@@ -171,7 +171,7 @@ class ProfilesQueryService {
                             }
                         },
                         {
-                            $project: { _id: 1, title: 1 }
+                            $project: { title: 1 }
                         }
                     ],
                     as: 'project'
@@ -241,7 +241,7 @@ class ProfilesQueryService {
         return [
             {
                 $match: {
-                    _id: Types.ObjectId(profileId)
+                    _id: new Types.ObjectId(profileId)
                 }
             },
             ...ProfilesQueryService.getGenericQuery(userId)

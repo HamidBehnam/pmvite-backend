@@ -10,13 +10,11 @@ export const profilesRoutesConfig = (): Router => {
     const profileRouter = Router();
 
     profileRouter.post('/profiles', [
-        authMiddleware.checkJwt,
         fieldsMiddleware.disallow(['userId', 'originalImageLink']),
         profilesController.createProfile
     ]);
 
     profileRouter.get('/profiles', [
-        authMiddleware.checkJwt,
         /*
         the reason for commenting the validation out is because a deferred validation (in controller) is needed
         for this endpoint due to the possibility of sending wrong query params by users in the app's url.
@@ -28,34 +26,28 @@ export const profilesRoutesConfig = (): Router => {
     ]);
 
     profileRouter.get('/profiles-autocomplete', [
-        authMiddleware.checkJwt,
         fieldsMiddleware.validate(profilesJoiService.getProfilesAutocompleteSchema, ValidationDataSource.Query),
         profilesController.getProfilesAutocomplete
     ]);
 
     profileRouter.get('/profiles/:id', [
-        authMiddleware.checkJwt,
         profilesController.getProfile
     ]);
 
     profileRouter.patch('/profiles/:id', [
-        authMiddleware.checkJwt,
         fieldsMiddleware.disallow(['userId', 'originalImageLink']),
         profilesController.updateProfile
     ]);
 
     profileRouter.delete('/profiles/:id', [
-        authMiddleware.checkJwt,
         profilesController.deleteProfile
     ]);
 
     profileRouter.get('/user-profiles/:id', [
-        authMiddleware.checkJwt,
         profilesController.getUserProfile
     ]);
 
     profileRouter.post('/profiles/:id/images', [
-        authMiddleware.checkJwt,
         profilesController.uploadProfileImage
     ]);
 
@@ -64,7 +56,6 @@ export const profilesRoutesConfig = (): Router => {
     ]);
 
     profileRouter.delete('/profiles/:id/images/:fileId', [
-        authMiddleware.checkJwt,
         profilesController.deleteProfileImage
     ]);
 

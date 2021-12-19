@@ -11,6 +11,7 @@ import {membersRoutesConfig} from "./members/routes.config";
 import {tasksRoutesConfig} from "./tasks/routes.config";
 import {morganMiddleware} from "./common/middlewares/morgan.middleware";
 import {winstonService} from "./common/services/winston.service";
+import {authMiddleware} from './common/middlewares/auth.middleware';
 
 dbService.connectDB();
 
@@ -26,6 +27,7 @@ app.use(cors({
     origin: configService.cors_allowed_origins
 }));
 
+app.use(authMiddleware.checkJwt);
 app.use(morganMiddleware.morgan);
 app.use(profilesRoutesConfig());
 app.use(projectsRoutesConfig());

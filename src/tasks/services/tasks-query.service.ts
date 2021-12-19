@@ -133,7 +133,7 @@ class TasksQueryService {
 
         if (queryMeta.projectId) {
             matchAND.push({
-                'project._id': Types.ObjectId(queryMeta.projectId)
+                'project._id': new Types.ObjectId(queryMeta.projectId)
             });
 
             filter = queryService.queryFilterBuilder(filter, {$and: matchAND});
@@ -171,7 +171,7 @@ class TasksQueryService {
         return [
             {
                 $match: {
-                    _id: Types.ObjectId(taskId)
+                    _id: new Types.ObjectId(taskId)
                 }
             },
             ...TasksQueryService.getTasksGenericAggregateQuery()

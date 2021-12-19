@@ -193,7 +193,7 @@ class ProjectsController {
                 );
 
                 const fileOptions: FileOptions = {
-                    gridFSBucketOpenUploadStreamOptions: {
+                    gridFSBucketWriteStreamOptions: {
                         metadata: {
                             project: projectAuthorization.project._id
                         }
@@ -286,7 +286,7 @@ class ProjectsController {
                 );
 
                 const fileOptions: FileOptions = {
-                    gridFSBucketOpenUploadStreamOptions: {
+                    gridFSBucketWriteStreamOptions: {
                         metadata: {
                             project: projectAuthorization.project._id
                         }
