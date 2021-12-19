@@ -124,7 +124,7 @@ class MembersQueryService {
 
         if (queryMeta.projectId) {
             matchAND.push({
-                'project._id': Types.ObjectId(queryMeta.projectId)
+                'project._id': new Types.ObjectId(queryMeta.projectId)
             });
 
             filter = queryService.queryFilterBuilder(filter, {$and: matchAND});
@@ -164,7 +164,7 @@ class MembersQueryService {
         return [
             {
                 $match: {
-                    _id: Types.ObjectId(memberId)
+                    _id: new Types.ObjectId(memberId)
                 },
             },
             ...MembersQueryService.getMembersGenericAggregateQuery()

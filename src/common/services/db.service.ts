@@ -1,7 +1,7 @@
 import mongoose, { Types } from "mongoose";
 import {configService} from "./config.service";
 import {winstonService} from "./winston.service";
-import {GridFSBucket, GridFSBucketOpenUploadStreamOptions} from "mongodb";
+import {GridFSBucket, GridFSBucketWriteStreamOptions} from "mongodb";
 import {Map} from "typescript";
 import {Readable} from "stream";
 import {gridFSModelBuilder} from "./gridfs-model-builder.service";
@@ -23,12 +23,7 @@ class DbService {
             throw new GenericError('multiple database initializations')
         }
 
-        const dbOptions = {
-            useNewUrlParser: true,
-            useUnifiedTopology: true
-        }
-
-        mongoose.connect(configService.mongodb_uri, dbOptions)
+        mongoose.connect(configService.mongodb_uri)
             .then((mongooseInstance) => {
                 this.mongooseInstance = mongooseInstance;
                 gridFSModelBuilder.run();
@@ -48,10 +43,10 @@ class DbService {
 
             const selectedFileName = fileOptions.filename || file.originalname;
 
-            const gridFSBucketOpenUploadStreamOptions: GridFSBucketOpenUploadStreamOptions =
-                fileOptions.gridFSBucketOpenUploadStreamOptions || {};
+            const gridFSBucketWriteStreamOptions: GridFSBucketWriteStreamOptions =
+                fileOptions.gridFSBucketWriteStreamOptions || {};
 
-            const uploadStream = this.getGridFSBucket(fileCategory).openUploadStream(selectedFileName, gridFSBucketOpenUploadStreamOptions);
+            const uploadStream = this.getGridFSBucket(fileCategory).openUploadStream(selectedFileName, gridFSBucketWriteStreamOptions);
             const readableStream = new Readable();
 
             readableStream.push(file.buffer);
@@ -69,7 +64,7 @@ class DbService {
 
         return new Promise<void>((resolve, reject) => {
 
-            this.getGridFSBucket(fileCategory).delete(mongoose.Types.ObjectId(fileId), (error) => {
+            this.getGridFSBucket(fileCategory).delete(new mongoose.Types.ObjectId(fileId), (error) => {
                 if (error) {
                     reject(error.message);
                 }
@@ -82,7 +77,7 @@ class DbService {
     async getFile(fileCategory: FileCategory, fileId: string): Promise<any> {
 
         const foundFiles = await this.getGridFSBucket(fileCategory).find({
-            _id: mongoose.Types.ObjectId(fileId)
+            _id: new mongoose.Types.ObjectId(fileId)
         }).toArray();
 
         if (foundFiles.length === 0) {
@@ -98,7 +93,7 @@ class DbService {
 
         return {
             file,
-            stream: this.getGridFSBucket(fileCategory).openDownloadStream(mongoose.Types.ObjectId(fileId))
+            stream: this.getGridFSBucket(fileCategory).openDownloadStream(new mongoose.Types.ObjectId(fileId))
         };
     }
 
@@ -106,7 +101,7 @@ class DbService {
 
         return new Promise<void>((resolve, reject) => {
 
-            this.getGridFSBucket(fileCategory).rename(mongoose.Types.ObjectId(fileId), filename, (error) => {
+            this.getGridFSBucket(fileCategory).rename(new mongoose.Types.ObjectId(fileId), filename, (error) => {
                 if (error) {
                     reject(error.message);
                 }
@@ -128,7 +123,7 @@ class DbService {
             if (this.mongooseInstance) {
                 this.mongooseInstance.connection.db
                     .collection(`${fileCategory}.files`)
-                    .updateOne({_id: mongoose.Types.ObjectId(fileId)},
+                    .updateOne({_id: new mongoose.Types.ObjectId(fileId)},
                         {$set: {'metadata.description': description}})
                     .then(() => resolve())
                     .catch(() => reject());
@@ -150,7 +145,7 @@ class DbService {
             if (this.mongooseInstance) {
                 this.mongooseInstance.connection.db
                     .collection(`${fileCategory}.files`)
-                    .updateOne({_id: mongoose.Types.ObjectId(fileId)},
+                    .updateOne({_id: new mongoose.Types.ObjectId(fileId)},
                         {$unset: {'metadata.description': 1}})
                     .then(() => resolve())
                     .catch(() => reject());

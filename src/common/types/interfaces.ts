@@ -2,7 +2,7 @@ import {Request} from "express";
 import {IProject} from "../../projects/models/projects.model";
 import {IMember} from "../../members/models/members.model";
 import {ITask} from "../../tasks/models/tasks.model";
-import {GridFSBucketOpenUploadStreamOptions, GridFSBucketReadStream} from "mongodb";
+import {GridFSBucketWriteStreamOptions, GridFSBucketReadStream} from "mongodb";
 
 export interface Auth0Request extends Request {
     user?: any;
@@ -27,7 +27,7 @@ export interface ProjectAuthorizationByTask extends ProjectAuthorization {
 
 export interface FileOptions {
     filename?: string;
-    gridFSBucketOpenUploadStreamOptions?: GridFSBucketOpenUploadStreamOptions;
+    gridFSBucketWriteStreamOptions?: GridFSBucketWriteStreamOptions;
 }
 
 export interface FileStream {

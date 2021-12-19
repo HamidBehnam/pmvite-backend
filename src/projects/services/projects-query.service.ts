@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+import {PipelineStage, Types } from 'mongoose';
 import { ProjectMemberRole, ProjectStatistic, WorkStatus } from '../../common/types/enums';
 
 class ProjectsQueryService {
@@ -38,7 +38,7 @@ class ProjectsQueryService {
         ];
     }
 
-    private static getProjectsViewerAssociationQuery(userId: string) {
+    private static getProjectsViewerAssociationQuery(userId: string): PipelineStage[] {
         return [
             {
                 $lookup: {
@@ -67,7 +67,7 @@ class ProjectsQueryService {
         ];
     }
 
-    private static getProjectsReferenceQuery() {
+    private static getProjectsReferenceQuery(): PipelineStage[] {
         return [
             {
                 $lookup: {
@@ -93,7 +93,7 @@ class ProjectsQueryService {
                                             }
                                         }
                                     },
-                                    { $project: { _id: 1, firstName: 1, lastName: 1 } }
+                                    { $project: { firstName: 1, lastName: 1 } }
                                 ],
                                 as: 'profile'
                             }
@@ -128,7 +128,7 @@ class ProjectsQueryService {
                                 }
                             }
                         },
-                        { $project: { _id: 1, title: 1 } }
+                        { $project: { title: 1 } }
                     ],
                     as: 'acceptedTasks'
                 }
@@ -155,7 +155,7 @@ class ProjectsQueryService {
                                 }
                             }
                         },
-                        { $project: { _id: 1, title: 1 } }
+                        { $project: { title: 1 } }
                     ],
                     as: 'activeTasks'
                 }
@@ -189,7 +189,7 @@ class ProjectsQueryService {
                                 assignee: null
                             }
                         },
-                        { $project: { _id: 1, title: 1 } }
+                        { $project: { title: 1 } }
                     ],
                     as: 'availableTasks'
                 }
@@ -206,7 +206,7 @@ class ProjectsQueryService {
                                 }
                             }
                         },
-                        { $project: { _id: 1, filename: 1 } }
+                        { $project: { filename: 1 } }
                     ],
                     as: 'attachmentsQueried' // the reason for adding 'Queried' in the name is to avoid overriding the current document with the same name.
                 }
@@ -431,7 +431,7 @@ class ProjectsQueryService {
         return [
             {
                 $match: {
-                    _id: Types.ObjectId(projectId)
+                    _id: new Types.ObjectId(projectId)
                 }
             },
             ...ProjectsQueryService.getGenericQuery(userId)
@@ -442,7 +442,7 @@ class ProjectsQueryService {
         return [
             {
                 $match: {
-                    _id: Types.ObjectId(projectId)
+                    _id: new Types.ObjectId(projectId)
                 }
             },
             ...ProjectsQueryService.getGenericQuery(userId),
@@ -450,11 +450,11 @@ class ProjectsQueryService {
         ];
     }
 
-    getProjectAttachmentsAggregateQuery(projectId: string) {
+    getProjectAttachmentsAggregateQuery(projectId: string): PipelineStage[] {
         return [
             {
                 $match: {
-                    _id: Types.ObjectId(projectId)
+                    _id: new Types.ObjectId(projectId)
                 }
             },
             {

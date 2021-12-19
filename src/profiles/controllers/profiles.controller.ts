@@ -242,7 +242,7 @@ class ProfilesController {
                 }
 
                 const fileOptions: FileOptions = {
-                    gridFSBucketOpenUploadStreamOptions: {
+                    gridFSBucketWriteStreamOptions: {
                         metadata: {
                             profile: profile._id
                         }

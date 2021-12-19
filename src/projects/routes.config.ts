@@ -9,7 +9,6 @@ export const projectsRoutesConfig = (): Router => {
     const projectsRouter = Router();
 
     projectsRouter.post('/projects', [
-        authMiddleware.checkJwt,
         // the reason for disallowing 'members' and 'tasks' fields is to make sure members and tasks are gonna be
         // created through their own endpoints so data will be in sync with the members and tasks collections
         fieldsMiddleware.disallow(['members', 'tasks', 'createdBy', 'image']),
@@ -17,7 +16,6 @@ export const projectsRoutesConfig = (): Router => {
     ]);
 
     projectsRouter.get('/projects', [
-        authMiddleware.checkJwt,
         /*
         the reason for commenting the validation out is because a deferred validation (in controller) is needed
         for this endpoint due to the possibility of sending wrong query params by users in the app's url.
@@ -29,17 +27,14 @@ export const projectsRoutesConfig = (): Router => {
     ]);
 
     projectsRouter.get('/projects/:id', [
-        authMiddleware.checkJwt,
         projectsController.getProject
     ]);
 
     projectsRouter.get('/projects/:id/verbose', [
-        authMiddleware.checkJwt,
         projectsController.getProjectVerbose
     ]);
 
     projectsRouter.patch('/projects/:id', [
-        authMiddleware.checkJwt,
         // the reason for disallowing 'members' and 'tasks' fields is to make sure members and tasks are gonna be
         // created through their own endpoints so data will be in sync with the members and tasks collections
         fieldsMiddleware.disallow(['members', 'tasks', 'createdBy', 'image']),
@@ -47,12 +42,10 @@ export const projectsRoutesConfig = (): Router => {
     ]);
 
     projectsRouter.delete('/projects/:id', [
-        authMiddleware.checkJwt,
         projectsController.deleteProject
     ]);
 
     projectsRouter.post('/projects/:id/images', [
-        authMiddleware.checkJwt,
         projectsController.uploadProjectImage
     ]);
 
@@ -61,12 +54,10 @@ export const projectsRoutesConfig = (): Router => {
     ]);
 
     projectsRouter.delete('/projects/:id/images/:fileId', [
-        authMiddleware.checkJwt,
         projectsController.deleteProjectImage
     ]);
 
     projectsRouter.post('/projects/:id/attachments', [
-        authMiddleware.checkJwt,
         projectsController.uploadProjectAttachment
     ]);
 
@@ -79,7 +70,6 @@ export const projectsRoutesConfig = (): Router => {
     ]);
 
     projectsRouter.patch('/projects/:id/attachments/:fileId', [
-        authMiddleware.checkJwt,
         projectsController.updateProjectAttachment
     ]);
 
@@ -88,7 +78,6 @@ export const projectsRoutesConfig = (): Router => {
     ]);
 
     projectsRouter.delete('/projects/:id/attachments/:fileId', [
-        authMiddleware.checkJwt,
         projectsController.deleteProjectAttachment
     ]);
 
