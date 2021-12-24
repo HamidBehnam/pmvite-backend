@@ -19,6 +19,7 @@ if (fs.existsSync(envPath) || fs.existsSync(envPathAlternative)) {
 
 class ConfigService {
     private readonly gcp_project: string;
+    private readonly port_explicit: string;
     private readonly port_ref: string;
     private readonly mongodb_uri_ref: string;
     private readonly auth0_domain_ref: string;
@@ -32,7 +33,17 @@ class ConfigService {
     private secretLoaderPromises: Promise<any>[];
 
     constructor() {
+        /*
+         the reason that GCP_PROJECT (google cloud project) is not in secret manager is because it needs
+         to be available to be able to get the secrets defined in google cloud project's secret manager.
+        */
         this.gcp_project = process.env.GCP_PROJECT as string;
+        /*
+         the reason that there are 2 env variables PORT and PORT_REF is because PORT
+         is the env variable that will be injected by Cloud Run and PORT_REF is the
+         env variable which will be used in case PORT is not injected by Cloud Run.
+        */
+        this.port_explicit = process.env.PORT as string;
         this.port_ref = process.env.PORT_REF as string;
         this.mongodb_uri_ref = process.env.MONGODB_URI_REF as string;
         this.auth0_domain_ref = process.env.AUTH0_DOMAIN_REF as string;
@@ -62,6 +73,16 @@ class ConfigService {
         this.secretLoaderPromises = [];
 
         this.secretReferenceMap.forEach((value: string, key: string) => {
+            if (key === this.port_ref && this.port_explicit) {
+                /*
+                 this is because the Google Cloud Run requirement is to make sure if PORT is injected by
+                 Cloud Run the server must listen on that port and if it's not injected by
+                 Cloud Run the server could listen on any ports that is defined in the secret manager.
+                */
+                this.secretReferenceMap.set(this.port_ref, this.port_explicit);
+                return;
+            }
+
             const accessSecretPromise = client.accessSecretVersion({
                 name: `projects/${this.gcp_project}/secrets/${key}/versions/latest`,
             });
