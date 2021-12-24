@@ -13,33 +13,36 @@ import {morganMiddleware} from "./common/middlewares/morgan.middleware";
 import {winstonService} from "./common/services/winston.service";
 import {authMiddleware} from './common/middlewares/auth.middleware';
 
-dbService.connectDB();
+configService.secretLoader().then(_ => {
 
-const app: Application = express();
-const main: Application = express();
+    dbService.connectDB();
 
-// https://stackoverflow.com/a/51844327/2281403
-app.use(express.json());
-// https://stackoverflow.com/a/25471936/2281403
-app.use(express.urlencoded({ extended: true }));
+    const app: Application = express();
+    const main: Application = express();
 
-app.use(cors({
-    origin: configService.cors_allowed_origins
-}));
+    // https://stackoverflow.com/a/51844327/2281403
+    app.use(express.json());
+    // https://stackoverflow.com/a/25471936/2281403
+    app.use(express.urlencoded({ extended: true }));
 
-app.use(authMiddleware.checkJwt);
-app.use(morganMiddleware.morgan);
-app.use(profilesRoutesConfig());
-app.use(projectsRoutesConfig());
-app.use(usersRoutesConfig());
-app.use(membersRoutesConfig());
-app.use(tasksRoutesConfig());
+    app.use(cors({
+        origin: configService.cors_allowed_origins
+    }));
 
-main.use('/api/v1', app);
+    app.use(authMiddleware.checkJwt);
+    app.use(morganMiddleware.morgan);
+    app.use(profilesRoutesConfig());
+    app.use(projectsRoutesConfig());
+    app.use(usersRoutesConfig());
+    app.use(membersRoutesConfig());
+    app.use(tasksRoutesConfig());
 
-// https://stackoverflow.com/q/17696801/2281403
-const server = http.createServer(main);
+    main.use('/api/v1', app);
 
-server.listen(configService.port, () => {
-    return winstonService.Logger.info(`server is listening on ${configService.port}`);
+    // https://stackoverflow.com/q/17696801/2281403
+    const server = http.createServer(main);
+
+    server.listen(configService.port, () => {
+        return winstonService.Logger.info(`server is listening on ${configService.port}`);
+    });
 });
