@@ -4,10 +4,13 @@ import jwtAuthz from "express-jwt-authz";
 import {configService} from "../services/config.service";
 
 class AuthMiddleware {
-    private readonly _checkJwt: jwt.RequestHandler;
+    private _checkJwt?: jwt.RequestHandler;
 
     constructor() {
-        this._checkJwt = jwt({
+    }
+
+    get checkJwt(): jwt.RequestHandler {
+        this._checkJwt = this._checkJwt || jwt({
             secret: JwksRsa.expressJwtSecret({
                 cache: true,
                 rateLimit: true,
@@ -18,9 +21,7 @@ class AuthMiddleware {
             issuer: `https://${configService.auth0_domain}/`,
             algorithms: ['RS256']
         });
-    }
 
-    get checkJwt(): jwt.RequestHandler {
         return this._checkJwt;
     }
 
