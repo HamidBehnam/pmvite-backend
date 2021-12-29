@@ -22,6 +22,7 @@ import {BadRequestError} from "../../common/types/errors";
 import {Task} from "../../tasks/models/tasks.model";
 import { queryService } from '../../common/services/query.service';
 import { projectsJoiService } from '../services/projects-joi.service';
+import { storageService } from '../../common/services/storage.service';
 
 class ProjectsController {
     async createProject(request: Auth0Request, response: Response) {
@@ -285,33 +286,27 @@ class ProjectsController {
                     ProjectMemberRole.Developer
                 );
 
-                const fileOptions: FileOptions = {
-                    gridFSBucketWriteStreamOptions: {
-                        metadata: {
-                            project: projectAuthorization.project._id
-                        }
-                    }
-                };
+                const uniqueFilename = storageService.getUniqueFilename(request.file.originalname);
 
-                const fileUploadResult: FileUploadResult =
-                    await dbService.saveFile(FileCategory.Attachments, request.file, fileOptions);
+                const fileReference = storageService.getFileReference(uniqueFilename);
+
+                await fileReference.save(request.file.buffer);
 
                 await projectAuthorization.project.updateOne({
                     $push: {
-                        attachments: fileUploadResult.id
+                        attachments: uniqueFilename
                     }
                 });
 
-                const file = await dbService.getFile(FileCategory.Attachments, fileUploadResult.id);
-
-                response.status(201).send(file);
+                response.status(201).send({
+                    message: 'file is successfully uploaded'
+                });
             } catch (error) {
 
                 response.status(errorHandlerService.getStatusCode(error)).send(error);
             }
         });
     }
-
 
     async deleteProjectAttachment(request: Auth0Request, response: Response) {
 
@@ -343,11 +338,13 @@ class ProjectsController {
     async getProjectAttachment(request: Auth0Request, response: Response) {
         try {
 
-            // loading the project data before loading its file is not needed atm but the project id
-            // will be in request.params.id
-            const fileStream: FileStream = await dbService.getFileStream(FileCategory.Attachments, request.params.fileId);
-            response.header('Content-Disposition', `filename="${fileStream.file.filename}"`);
-            fileStream.stream.pipe(response);
+            const uniqueFilename = storageService.getUniqueFilename(request.params.filename, request.params.prefix);
+
+            const fileReference = storageService.getFileReference(uniqueFilename);
+
+            response.header('Content-Disposition', `filename="${request.params.filename}"`);
+
+            fileReference.createReadStream().pipe(response);
         } catch (error) {
 
             response.status(errorHandlerService.getStatusCode(error)).send(error);

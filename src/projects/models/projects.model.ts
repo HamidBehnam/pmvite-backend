@@ -13,7 +13,7 @@ export interface IProject extends Document {
     members: Types.ObjectId[] | IMember[];
     tasks: Types.ObjectId[] | ITask[];
     image: Types.ObjectId | IGridFSFile;
-    attachments: Types.ObjectId[] | IGridFSFile[]
+    attachments: Types.ObjectId[] | IGridFSFile[] | string[];
 }
 
 const ProjectSchema: Schema = new Schema({
@@ -63,7 +63,7 @@ const ProjectSchema: Schema = new Schema({
     },
     attachments: {
         type: [{
-            type: Types.ObjectId,
+            type: String,
             ref: 'Attachment'
         }]
     }

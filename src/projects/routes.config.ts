@@ -61,7 +61,7 @@ export const projectsRoutesConfig = (): Router => {
         projectsController.uploadProjectAttachment
     ]);
 
-    projectsRouter.get('/projects/:id/attachments/:fileId', [
+    projectsRouter.get('/projects/:id/attachments/:prefix/:filename', [
         projectsController.getProjectAttachment
     ]);
 
