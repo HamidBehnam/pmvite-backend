@@ -61,12 +61,12 @@ export const projectsRoutesConfig = (): Router => {
         projectsController.uploadProjectAttachment
     ]);
 
-    projectsRouter.get('/projects/:id/attachments/:prefix/:filename', [
-        projectsController.getProjectAttachment
-    ]);
-
     projectsRouter.get('/projects/:id/attachments/:fileId/meta', [
         projectsController.getProjectAttachmentMeta
+    ]);
+
+    projectsRouter.get('/projects/:id/attachments/:prefix/:filename', [
+        projectsController.getProjectAttachment
     ]);
 
     projectsRouter.patch('/projects/:id/attachments/:fileId', [

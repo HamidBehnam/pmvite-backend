@@ -313,6 +313,8 @@ class ProjectsController {
 
                 const [fileData] = await fileReference.get();
 
+                let createdFileMeta;
+
                 if (fileData && fileData.metadata) {
                     const fileMeta = {
                         size: fileData.metadata.size,
@@ -322,19 +324,16 @@ class ProjectsController {
                         available: true
                     };
 
-                    const result = await FileMeta.create(fileMeta);
+                    createdFileMeta = await FileMeta.create(fileMeta);
 
                     await projectAuthorization.project.updateOne({
                         $push: {
-                            attachments: result._id
+                            attachments: createdFileMeta._id
                         }
                     });
                 }
 
-
-                response.status(201).send({
-                    message: 'file is successfully uploaded'
-                });
+                response.status(201).send(createdFileMeta);
             } catch (error) {
 
                 response.status(errorHandlerService.getStatusCode(error)).send(error);
@@ -390,7 +389,7 @@ class ProjectsController {
 
             // loading the project data before loading its file is not needed atm but the project id
             // will be in request.params.id
-            const file = await dbService.getFile(FileCategory.Attachments, request.params.fileId);
+            const file = await FileMeta.findById(request.params.fileId);
 
             response.status(200).send(file);
         } catch (error) {
