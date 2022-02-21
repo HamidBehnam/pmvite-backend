@@ -3,6 +3,7 @@ import {IMember} from "../../members/models/members.model";
 import {ITask} from "../../tasks/models/tasks.model";
 import {IGridFSFile} from "../../common/services/gridfs-model-builder.service";
 import {WorkStatus} from "../../common/types/enums";
+import { IFileMeta } from '../../file-meta/models/file-meta.model';
 
 export interface IProject extends Document {
     title: string;
@@ -13,7 +14,7 @@ export interface IProject extends Document {
     members: Types.ObjectId[] | IMember[];
     tasks: Types.ObjectId[] | ITask[];
     image: Types.ObjectId | IGridFSFile;
-    attachments: Types.ObjectId[] | IGridFSFile[] | string[];
+    attachments: Types.ObjectId[] | IFileMeta[];
 }
 
 const ProjectSchema: Schema = new Schema({
@@ -63,7 +64,7 @@ const ProjectSchema: Schema = new Schema({
     },
     attachments: {
         type: [{
-            type: String,
+            type: Types.ObjectId,
             ref: 'Attachment'
         }]
     }

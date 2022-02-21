@@ -459,7 +459,7 @@ class ProjectsQueryService {
             },
             {
                 $lookup: {
-                    from: 'attachments.files',
+                    from: 'filemetas',
                     localField: 'attachments',
                     foreignField: '_id',
                     as: 'attachments'
