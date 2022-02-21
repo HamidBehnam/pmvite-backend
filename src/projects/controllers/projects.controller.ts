@@ -23,6 +23,10 @@ import {Task} from "../../tasks/models/tasks.model";
 import { queryService } from '../../common/services/query.service';
 import { projectsJoiService } from '../services/projects-joi.service';
 import { storageService } from '../../common/services/storage.service';
+import { FileMeta } from '../../file-meta/models/file-meta.model';
+import { StorageMeta } from '../../storage-meta/models/storage-meta.model';
+import { configService } from '../../common/services/config.service';
+import { fileMetaQueryService } from '../../file-meta/services/file-meta-query.service';
 
 class ProjectsController {
     async createProject(request: Auth0Request, response: Response) {
@@ -286,17 +290,47 @@ class ProjectsController {
                     ProjectMemberRole.Developer
                 );
 
+                const [capacityData] = await FileMeta
+                    .aggregate(fileMetaQueryService.usedCapacityAggregateQuery(projectAuthorization.project.createdBy));
+
+                const usedCapacity = capacityData ? capacityData.usedCapacity : 0;
+
+                const storageMeta = await StorageMeta.findOne({userId: projectAuthorization.project.createdBy});
+
+                const totalCapacity = storageMeta ? storageMeta.capacity : + configService.storage_default_capacity;
+
+                if (usedCapacity + request.file.size > totalCapacity) {
+                    const error = new BadRequestError('Not enough storage');
+                    response.status(errorHandlerService.getStatusCode(error)).send(error);
+                    return;
+                }
+
                 const uniqueFilename = storageService.getUniqueFilename(request.file.originalname);
 
                 const fileReference = storageService.getFileReference(uniqueFilename);
 
                 await fileReference.save(request.file.buffer);
 
-                await projectAuthorization.project.updateOne({
-                    $push: {
-                        attachments: uniqueFilename
-                    }
-                });
+                const [fileData] = await fileReference.get();
+
+                if (fileData && fileData.metadata) {
+                    const fileMeta = {
+                        size: fileData.metadata.size,
+                        path: fileData.metadata.name,
+                        uploadedBy: request.user.sub,
+                        storageOwner: projectAuthorization.project.createdBy,
+                        available: true
+                    };
+
+                    const result = await FileMeta.create(fileMeta);
+
+                    await projectAuthorization.project.updateOne({
+                        $push: {
+                            attachments: result._id
+                        }
+                    });
+                }
+
 
                 response.status(201).send({
                     message: 'file is successfully uploaded'

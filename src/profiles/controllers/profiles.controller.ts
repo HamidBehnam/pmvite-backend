@@ -16,6 +16,7 @@ import { queryService } from '../../common/services/query.service';
 import { Project } from '../../projects/models/projects.model';
 import { Task } from '../../tasks/models/tasks.model';
 import { profilesJoiService } from '../services/profiles-joi.service';
+import { StorageMeta } from '../../storage-meta/models/storage-meta.model';
 
 class ProfilesController {
      async createProfile(request: Auth0Request, response: Response, next: NextFunction) {
@@ -40,8 +41,14 @@ class ProfilesController {
                 email: request.user[`${configService.auth0_custom_rule_namespace}email`]
             };
 
+            const storageData = {
+                userId: request.user.sub,
+                capacity: + configService.storage_default_capacity
+            };
+
             const userProfile = await Profile.create(profileData);
             const userEmail = await Email.create(emailData);
+            const userStorage = await StorageMeta.create(storageData);
 
             // todo: the following approach in terms of adding the profile status to the token might be useful for
             //  insensitive scenarios like f/e scenarios but might not work for all the b/e scenarios because we can't

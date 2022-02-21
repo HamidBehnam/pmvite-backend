@@ -29,6 +29,7 @@ class ConfigService {
     private readonly auth0_custom_rule_namespace_ref: string;
     private readonly sendgrid_api_key_ref: string;
     private readonly gcp_storage_bucket_name_ref: string;
+    private readonly storage_default_capacity_ref: string;
     private readonly cors_allowed_origins_ref: string;
     private readonly secretReferenceMap = new Map<string, string>();
     private secretLoaderPromises: Promise<any>[];
@@ -54,6 +55,7 @@ class ConfigService {
         this.auth0_custom_rule_namespace_ref = process.env.AUTH0_CUSTOM_RULE_NAMESPACE_REF as string;
         this.sendgrid_api_key_ref = process.env.SENDGRID_API_KEY_REF as string;
         this.gcp_storage_bucket_name_ref = process.env.GCP_STORAGE_BUCKET_NAME_REF as string;
+        this.storage_default_capacity_ref = process.env.STORAGE_DEFAULT_CAPACITY_REF as string;
         this.cors_allowed_origins_ref = process.env.CORS_ALLOWED_ORIGINS_REF as string;
 
         this.secretReferenceMap.set(this.port_ref, '');
@@ -65,6 +67,7 @@ class ConfigService {
         this.secretReferenceMap.set(this.auth0_custom_rule_namespace_ref, '');
         this.secretReferenceMap.set(this.sendgrid_api_key_ref, '');
         this.secretReferenceMap.set(this.gcp_storage_bucket_name_ref, '');
+        this.secretReferenceMap.set(this.storage_default_capacity_ref, '');
         this.secretReferenceMap.set(this.cors_allowed_origins_ref, '');
 
         this.secretLoaderPromises = [];
@@ -135,6 +138,10 @@ class ConfigService {
 
     get gcp_storage_bucket_name(): string {
         return this.secretReferenceMap.get(this.gcp_storage_bucket_name_ref) as string;
+    }
+
+    get storage_default_capacity(): string {
+        return this.secretReferenceMap.get(this.storage_default_capacity_ref) as string;
     }
 
     get cors_allowed_origins(): RegExp[] {
