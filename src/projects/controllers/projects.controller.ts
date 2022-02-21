@@ -317,6 +317,7 @@ class ProjectsController {
 
                 if (fileData && fileData.metadata) {
                     const fileMeta = {
+                        filename: request.file.originalname,
                         size: fileData.metadata.size,
                         path: fileData.metadata.name,
                         uploadedBy: request.user.sub,
