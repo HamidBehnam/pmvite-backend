@@ -18,7 +18,7 @@ import {
 } from "../../common/types/interfaces";
 import {FileCategory, ProjectMemberRole} from "../../common/types/enums";
 import {errorHandlerService} from "../../common/services/error-handler.service";
-import {BadRequestError} from "../../common/types/errors";
+import { BadRequestError, NotFoundError } from "../../common/types/errors";
 import {Task} from "../../tasks/models/tasks.model";
 import { queryService } from '../../common/services/query.service';
 import { projectsJoiService } from '../services/projects-joi.service';
@@ -305,7 +305,9 @@ class ProjectsController {
                     return;
                 }
 
-                const uniqueFilename = storageService.getUniqueFilename(request.file.originalname);
+                const filePrefix = storageService.getUniqueFilePrefix();
+
+                const uniqueFilename = `${filePrefix}/${request.file.originalname}`;
 
                 const fileReference = storageService.getFileReference(uniqueFilename);
 
@@ -319,7 +321,7 @@ class ProjectsController {
                     const fileMeta = {
                         filename: request.file.originalname,
                         size: fileData.metadata.size,
-                        path: fileData.metadata.name,
+                        prefix: filePrefix,
                         uploadedBy: request.user.sub,
                         storageOwner: projectAuthorization.project.createdBy,
                         available: true
@@ -372,7 +374,14 @@ class ProjectsController {
     async getProjectAttachment(request: Auth0Request, response: Response) {
         try {
 
-            const uniqueFilename = storageService.getUniqueFilename(request.params.filename, request.params.prefix);
+            const fileMeta = await FileMeta.findById(request.params.fileId);
+
+            if (!fileMeta) {
+                const error = new NotFoundError('file not found');
+                return response.status(errorHandlerService.getStatusCode(error)).send(error);
+            }
+
+            const uniqueFilename = `${fileMeta.prefix}/${fileMeta.filename}`;
 
             const fileReference = storageService.getFileReference(uniqueFilename);
 
@@ -404,6 +413,13 @@ class ProjectsController {
 
             const operations = [];
 
+            const fileMeta = await FileMeta.findById(request.params.fileId);
+
+            if (!fileMeta) {
+                const error = new NotFoundError('file not found');
+                return response.status(errorHandlerService.getStatusCode(error)).send(error);
+            }
+
             const projectAuthorization: ProjectAuthorization = await projectAuthorizationService.authorize(
                 request.user.sub,
                 request.params.id,
@@ -412,38 +428,37 @@ class ProjectsController {
 
             if (request.body.filename) {
 
-                const file = await dbService.getFile(FileCategory.Attachments, request.params.fileId);
-                const currentFilename = file.filename;
-                const extensionIndex = currentFilename.lastIndexOf('.');
-                const currentFileExtension = extensionIndex !== -1 ? currentFilename.slice(extensionIndex) : '';
+                const uniqueFilename = `${fileMeta.prefix}/${fileMeta.filename}`;
+                const fileReference = storageService.getFileReference(uniqueFilename);
+                const extensionIndex = fileMeta.filename.lastIndexOf('.');
+                const currentFileExtension = extensionIndex !== -1 ? fileMeta.filename.slice(extensionIndex) : '';
 
-                operations.push(dbService.renameFile(
-                    FileCategory.Attachments,
-                    request.params.fileId,
-                    request.body.filename
-                        .concat(currentFileExtension)
-                ));
+                const newUniqueFilename = `${fileMeta.prefix}/${request.body.filename + currentFileExtension}`;
+
+                operations.push(fileReference.rename(newUniqueFilename));
+                operations.push(fileMeta.updateOne({
+                    filename: request.body.filename + currentFileExtension
+                }));
             }
 
             if (request.body.description) {
-                operations.push(dbService.updateFileDescription(
-                    FileCategory.Attachments,
-                    request.params.fileId,
-                    request.body.description
-                ));
+                operations.push(fileMeta.updateOne({
+                    description: request.body.description
+                }));
             }
 
             if (request.body.description === '') {
-                operations.push(dbService.deleteFileDescription(
-                    FileCategory.Attachments,
-                    request.params.fileId
-                ));
+                operations.push(fileMeta.updateOne({
+                    $unset: {
+                        description: 1
+                    }
+                }));
             }
 
             await global.Promise.all(operations);
 
             // returning the updated file to avoid doing the data processing in f/e to update the f/e store
-            const updatedFile = await dbService.getFile(FileCategory.Attachments, request.params.fileId)
+            const updatedFile = await FileMeta.findById(request.params.fileId);
 
             response.status(200).send(updatedFile);
         } catch (error) {

@@ -2,7 +2,7 @@ import {Document, model, Model, Schema} from "mongoose";
 
 export interface IFileMeta extends Document {
     filename: string;
-    path: string;
+    prefix: string;
     uploadedBy: string;
     storageOwner: string;
     description: string;
@@ -15,7 +15,7 @@ const FileMetaSchema: Schema = new Schema({
         type: String,
         required: true
     },
-    path: {
+    prefix: {
         type: String,
         required: true
     },

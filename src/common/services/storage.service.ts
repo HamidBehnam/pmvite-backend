@@ -10,8 +10,8 @@ class StorageService {
         this.storage = new Storage();
     }
 
-    getUniqueFilename(originalFilename: string, prefix = uuidv4()) {
-        return `${prefix}/${originalFilename}`;
+    getUniqueFilePrefix(): string {
+        return uuidv4();
     }
 
     getFileReference(uniqueFilename: string) {
