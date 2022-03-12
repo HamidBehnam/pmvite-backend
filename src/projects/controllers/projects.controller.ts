@@ -348,13 +348,23 @@ class ProjectsController {
 
         try {
 
+            const fileMeta = await FileMeta.findById(request.params.fileId);
+
+            if (!fileMeta) {
+                const error = new NotFoundError('file not found');
+                return response.status(errorHandlerService.getStatusCode(error)).send(error);
+            }
+
             const projectAuthorization: ProjectAuthorization = await projectAuthorizationService.authorize(
                 request.user.sub,
                 request.params.id,
                 ProjectMemberRole.Developer
             );
 
-            await dbService.deleteFile(FileCategory.Attachments, request.params.fileId);
+            const uniqueFilename = `${fileMeta.prefix}/${fileMeta.filename}`;
+            const fileReference = storageService.getFileReference(uniqueFilename);
+            await fileReference.delete();
+            await fileMeta.deleteOne();
 
             await projectAuthorization.project.updateOne({
                 $pull: {
