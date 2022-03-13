@@ -5,14 +5,12 @@ import {Email} from "../../emails/models/emails.model";
 import {configService} from "../../common/services/config.service";
 import {profilesQueryService} from "../services/profiles-query.service";
 import {multerMiddleware} from "../../common/middlewares/multer.middleware";
-import {dbService} from "../../common/services/db.service";
 import {Types} from "mongoose";
 import {
     Auth0MetaData,
     Auth0Request,
     FileStreamData,
 } from "../../common/types/interfaces";
-import {FileCategory} from "../../common/types/enums";
 import {errorHandlerService} from "../../common/services/error-handler.service";
 import {BadRequestError, NotFoundError} from "../../common/types/errors";
 import { Member } from '../../members/models/members.model';
@@ -199,7 +197,7 @@ class ProfilesController {
              });
 
              if (foundProfile.image) {
-                 await dbService.deleteFile(FileCategory.Images, foundProfile.image.toString());
+                 await storageService.deleteFile(foundProfile.image.toString());
              }
 
              await foundProfile.deleteOne();
@@ -287,7 +285,7 @@ class ProfilesController {
                  return response.status(errorHandlerService.getStatusCode(error)).send(error);
              }
 
-             await dbService.deleteFile(FileCategory.Images, request.params.fileId);
+             await storageService.deleteFile(request.params.fileId);
 
              await profile.updateOne({
                  $unset: {
