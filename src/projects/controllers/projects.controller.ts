@@ -197,31 +197,23 @@ class ProjectsController {
                     ProjectMemberRole.Admin
                 );
 
-                const fileOptions: FileOptions = {
-                    gridFSBucketWriteStreamOptions: {
-                        metadata: {
-                            project: projectAuthorization.project._id
-                        }
-                    }
-                };
-
-                const fileUploadResult: FileUploadResult =
-                    await dbService.saveFile(FileCategory.Images, request.file, fileOptions);
-
                 const oldImageId = projectAuthorization.project.image;
 
-                await projectAuthorization.project.updateOne({
-                    image: fileUploadResult.id
-                });
+                const createdFileMeta = await storageService.uploadFile(request.user.sub, projectAuthorization.project.createdBy, request.file);
 
-                if (oldImageId) {
-
-                    await dbService.deleteFile(FileCategory.Images, (oldImageId as Types.ObjectId).toString());
+                if (createdFileMeta) {
+                    await projectAuthorization.project.updateOne({
+                        image: createdFileMeta._id
+                    });
                 }
 
-                const file = await dbService.getFile(FileCategory.Images, fileUploadResult.id);
+                // TODO: Implement delete old image
+                // if (oldImageId) {
+                //
+                //     await dbService.deleteFile(FileCategory.Images, (oldImageId as Types.ObjectId).toString());
+                // }
 
-                response.status(201).send(file);
+                response.status(201).send(createdFileMeta);
             } catch (error) {
 
                 response.status(errorHandlerService.getStatusCode(error)).send(error);
@@ -290,45 +282,9 @@ class ProjectsController {
                     ProjectMemberRole.Developer
                 );
 
-                const [capacityData] = await FileMeta
-                    .aggregate(fileMetaQueryService.usedCapacityAggregateQuery(projectAuthorization.project.createdBy));
+                const createdFileMeta = await storageService.uploadFile(request.user.sub, projectAuthorization.project.createdBy, request.file);
 
-                const usedCapacity = capacityData ? capacityData.usedCapacity : 0;
-
-                const storageMeta = await StorageMeta.findOne({userId: projectAuthorization.project.createdBy});
-
-                const totalCapacity = storageMeta ? storageMeta.capacity : + configService.storage_default_capacity;
-
-                if (usedCapacity + request.file.size > totalCapacity) {
-                    const error = new BadRequestError('Not enough storage');
-                    response.status(errorHandlerService.getStatusCode(error)).send(error);
-                    return;
-                }
-
-                const filePrefix = storageService.getUniqueFilePrefix();
-
-                const uniqueFilename = `${filePrefix}/${request.file.originalname}`;
-
-                const fileReference = storageService.getFileReference(uniqueFilename);
-
-                await fileReference.save(request.file.buffer);
-
-                const [fileData] = await fileReference.get();
-
-                let createdFileMeta;
-
-                if (fileData && fileData.metadata) {
-                    const fileMeta = {
-                        filename: request.file.originalname,
-                        size: fileData.metadata.size,
-                        prefix: filePrefix,
-                        uploadedBy: request.user.sub,
-                        storageOwner: projectAuthorization.project.createdBy,
-                        available: true
-                    };
-
-                    createdFileMeta = await FileMeta.create(fileMeta);
-
+                if (createdFileMeta) {
                     await projectAuthorization.project.updateOne({
                         $push: {
                             attachments: createdFileMeta._id
