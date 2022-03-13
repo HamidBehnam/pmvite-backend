@@ -7,7 +7,11 @@ import {profilesQueryService} from "../services/profiles-query.service";
 import {multerMiddleware} from "../../common/middlewares/multer.middleware";
 import {dbService} from "../../common/services/db.service";
 import {Types} from "mongoose";
-import {Auth0MetaData, Auth0Request, FileOptions, FileStream, FileUploadResult} from "../../common/types/interfaces";
+import {
+    Auth0MetaData,
+    Auth0Request,
+    FileStreamData,
+} from "../../common/types/interfaces";
 import {FileCategory} from "../../common/types/enums";
 import {errorHandlerService} from "../../common/services/error-handler.service";
 import {BadRequestError, NotFoundError} from "../../common/types/errors";
@@ -17,6 +21,7 @@ import { Project } from '../../projects/models/projects.model';
 import { Task } from '../../tasks/models/tasks.model';
 import { profilesJoiService } from '../services/profiles-joi.service';
 import { StorageMeta } from '../../storage-meta/models/storage-meta.model';
+import { storageService } from '../../common/services/storage.service';
 
 class ProfilesController {
      async createProfile(request: Auth0Request, response: Response, next: NextFunction) {
@@ -248,31 +253,20 @@ class ProfilesController {
                     return response.status(errorHandlerService.getStatusCode(error)).send(error);
                 }
 
-                const fileOptions: FileOptions = {
-                    gridFSBucketWriteStreamOptions: {
-                        metadata: {
-                            profile: profile._id
-                        }
-                    }
-                };
-
-                const fileUploadResult: FileUploadResult =
-                    await dbService.saveFile(FileCategory.Images, request.file, fileOptions);
-
                 const oldImageId = profile.image;
 
+                const createdFileMeta = await storageService.uploadFile(request.user.sub, request.user.sub, request.file);
+
                 await profile.updateOne({
-                    image: fileUploadResult.id
+                    image: createdFileMeta._id
                 });
 
                 if (oldImageId) {
 
-                    await dbService.deleteFile(FileCategory.Images, (oldImageId as Types.ObjectId).toString());
+                    await storageService.deleteFile(oldImageId.toString());
                 }
 
-                const file = await dbService.getFile(FileCategory.Images, fileUploadResult.id);
-
-                response.status(201).send(file);
+                response.status(201).send(createdFileMeta);
             } catch (error) {
 
                 response.status(errorHandlerService.getStatusCode(error)).send(error);
@@ -315,9 +309,11 @@ class ProfilesController {
 
              // loading the profile data before loading its file is not needed atm but the profile id
              // will be in request.params.id
-             const fileStream: FileStream = await dbService.getFileStream(FileCategory.Images, request.params.fileId);
-             response.header('Content-Disposition', `filename="${fileStream.file.filename}"`);
-             fileStream.stream.pipe(response);
+             const fileStreamData: FileStreamData = await storageService.getFileStreamData(request.params.fileId);
+
+             response.header('Content-Disposition', `filename="${fileStreamData.fileMeta.filename}"`);
+
+             fileStreamData.readStream.pipe(response);
          } catch (error) {
 
              response.status(errorHandlerService.getStatusCode(error)).send(error);

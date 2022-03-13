@@ -195,11 +195,9 @@ class ProjectsController {
 
                 const createdFileMeta = await storageService.uploadFile(request.user.sub, projectAuthorization.project.createdBy, request.file);
 
-                if (createdFileMeta) {
-                    await projectAuthorization.project.updateOne({
-                        image: createdFileMeta._id
-                    });
-                }
+                await projectAuthorization.project.updateOne({
+                    image: createdFileMeta._id
+                });
 
                 if (oldImageId) {
 
@@ -277,13 +275,11 @@ class ProjectsController {
 
                 const createdFileMeta = await storageService.uploadFile(request.user.sub, projectAuthorization.project.createdBy, request.file);
 
-                if (createdFileMeta) {
-                    await projectAuthorization.project.updateOne({
-                        $push: {
-                            attachments: createdFileMeta._id
-                        }
-                    });
-                }
+                await projectAuthorization.project.updateOne({
+                    $push: {
+                        attachments: createdFileMeta._id
+                    }
+                });
 
                 response.status(201).send(createdFileMeta);
             } catch (error) {
