@@ -1,7 +1,6 @@
 import {Document, model, Model, Schema, Types} from "mongoose";
 import {IMember} from "../../members/models/members.model";
 import {ITask} from "../../tasks/models/tasks.model";
-import {IGridFSFile} from "../../common/services/gridfs-model-builder.service";
 import {WorkStatus} from "../../common/types/enums";
 import { IFileMeta } from '../../file-meta/models/file-meta.model';
 

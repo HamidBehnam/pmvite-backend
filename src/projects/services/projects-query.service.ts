@@ -196,19 +196,10 @@ class ProjectsQueryService {
             },
             {
                 $lookup: {
-                    from: 'attachments.files',
-                    let: { id: '$_id' },
-                    pipeline: [
-                        {
-                            $match: {
-                                $expr: {
-                                    $eq: ['$metadata.project', '$$id']
-                                }
-                            }
-                        },
-                        { $project: { filename: 1 } }
-                    ],
-                    as: 'attachmentsQueried' // the reason for adding 'Queried' in the name is to avoid overriding the current document with the same name.
+                    from: 'filemetas',
+                    localField: 'attachments',
+                    foreignField: '_id',
+                    as: 'attachmentsQueried'
                 }
             },
             {
@@ -337,7 +328,7 @@ class ProjectsQueryService {
             },
             {
                 $lookup: {
-                    from: 'attachments.files',
+                    from: 'filemetas',
                     localField: 'attachments',
                     foreignField: '_id',
                     as: 'attachments'

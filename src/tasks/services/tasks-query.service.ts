@@ -35,7 +35,7 @@ class TasksQueryService {
                                     },
                                     {
                                         $lookup: {
-                                            from: 'images.files',
+                                            from: 'filemetas',
                                             localField: 'image',
                                             foreignField: '_id',
                                             as: 'image'
@@ -90,7 +90,7 @@ class TasksQueryService {
                         },
                         {
                             $lookup: {
-                                from: 'images.files',
+                                from: 'filemetas',
                                 localField: 'image',
                                 foreignField: '_id',
                                 as: 'image'

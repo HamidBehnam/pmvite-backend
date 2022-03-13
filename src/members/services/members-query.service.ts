@@ -22,7 +22,7 @@ class MembersQueryService {
                         },
                         {
                             $lookup: {
-                                from: 'images.files',
+                                from: 'filemetas',
                                 localField: 'image',
                                 foreignField: '_id',
                                 as: 'image'
@@ -67,7 +67,7 @@ class MembersQueryService {
                         },
                         {
                             $lookup: {
-                                from: 'images.files',
+                                from: 'filemetas',
                                 localField: 'image',
                                 foreignField: '_id',
                                 as: 'image'
