@@ -21,7 +21,7 @@ class ProjectsQueryService {
             },
             {
                 $lookup: {
-                    from: 'images.files',
+                    from: 'filemetas',
                     localField: 'image',
                     foreignField: '_id',
                     as: 'image'

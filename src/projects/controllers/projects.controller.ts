@@ -13,7 +13,7 @@ import {
     FileStreamData,
     ProjectAuthorization
 } from "../../common/types/interfaces";
-import {FileCategory, ProjectMemberRole} from "../../common/types/enums";
+import {ProjectMemberRole} from "../../common/types/enums";
 import {errorHandlerService} from "../../common/services/error-handler.service";
 import { BadRequestError, NotFoundError } from "../../common/types/errors";
 import {Task} from "../../tasks/models/tasks.model";
