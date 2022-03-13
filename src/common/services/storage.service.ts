@@ -67,6 +67,19 @@ class StorageService {
             throw new NotFoundError('File not found');
         }
     }
+
+    async deleteFile(fileId: string): Promise<void> {
+        const fileMeta = await FileMeta.findById(fileId);
+
+        if (!fileMeta) {
+            throw new NotFoundError('file not found');
+        }
+
+        const uniqueFilename = `${fileMeta.prefix}/${fileMeta.filename}`;
+        const fileReference = this.getFileReference(uniqueFilename);
+        await fileReference.delete();
+        await fileMeta.deleteOne();
+    }
 }
 
 export const storageService = new StorageService();

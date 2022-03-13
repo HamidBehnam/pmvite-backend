@@ -207,11 +207,10 @@ class ProjectsController {
                     });
                 }
 
-                // TODO: Implement delete old image
-                // if (oldImageId) {
-                //
-                //     await dbService.deleteFile(FileCategory.Images, (oldImageId as Types.ObjectId).toString());
-                // }
+                if (oldImageId) {
+
+                    await storageService.deleteFile(oldImageId.toString());
+                }
 
                 response.status(201).send(createdFileMeta);
             } catch (error) {
@@ -231,7 +230,7 @@ class ProjectsController {
                 ProjectMemberRole.Admin
             );
 
-            await dbService.deleteFile(FileCategory.Images, request.params.fileId);
+            await storageService.deleteFile(request.params.fileId);
 
             await projectAuthorization.project.updateOne({
                 $unset: {
@@ -304,23 +303,13 @@ class ProjectsController {
 
         try {
 
-            const fileMeta = await FileMeta.findById(request.params.fileId);
-
-            if (!fileMeta) {
-                const error = new NotFoundError('file not found');
-                return response.status(errorHandlerService.getStatusCode(error)).send(error);
-            }
-
             const projectAuthorization: ProjectAuthorization = await projectAuthorizationService.authorize(
                 request.user.sub,
                 request.params.id,
                 ProjectMemberRole.Developer
             );
 
-            const uniqueFilename = `${fileMeta.prefix}/${fileMeta.filename}`;
-            const fileReference = storageService.getFileReference(uniqueFilename);
-            await fileReference.delete();
-            await fileMeta.deleteOne();
+            await storageService.deleteFile(request.params.fileId);
 
             await projectAuthorization.project.updateOne({
                 $pull: {
