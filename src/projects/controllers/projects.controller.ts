@@ -6,7 +6,6 @@ import {projectAuthorizationService} from "../services/project-authorization.ser
 import {Member} from "../../members/models/members.model";
 import {winstonService} from "../../common/services/winston.service";
 import {projectsQueryService} from "../services/projects-query.service";
-import {dbService} from "../../common/services/db.service";
 import {multerMiddleware} from "../../common/middlewares/multer.middleware";
 import {Types} from "mongoose";
 import {
@@ -154,12 +153,12 @@ class ProjectsController {
             });
 
             if (projectAuthorization.project.image) {
-                await dbService.deleteFile(FileCategory.Images, projectAuthorization.project.image.toString());
+                await storageService.deleteFile(projectAuthorization.project.image.toString());
             }
 
             // using global.Promise to avoid getting the typescript warning suggesting that it needs to be imported.
             await global.Promise.all((projectAuthorization.project.attachments as Types.ObjectId[])
-                .map((attachment) => dbService.deleteFile(FileCategory.Attachments, attachment.toString())));
+                .map((attachment) => storageService.deleteFile(attachment.toString())));
 
             await projectAuthorization.project.deleteOne();
 
