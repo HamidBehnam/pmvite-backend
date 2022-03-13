@@ -1,10 +1,11 @@
-import { Bucket, Storage } from '@google-cloud/storage';
+import { Bucket, File, Storage } from '@google-cloud/storage';
 import { configService } from './config.service';
 import { v4 as uuidv4 } from 'uuid';
 import { FileMeta, IFileMeta } from '../../file-meta/models/file-meta.model';
 import { fileMetaQueryService } from '../../file-meta/services/file-meta-query.service';
 import { StorageMeta } from '../../storage-meta/models/storage-meta.model';
 import { BadRequestError, NotFoundError } from '../types/errors';
+import { FileStreamData } from '../types/interfaces';
 
 class StorageService {
     private storage;
@@ -18,7 +19,7 @@ class StorageService {
         return uuidv4();
     }
 
-    getFileReference(uniqueFilename: string) {
+    getFileReference(uniqueFilename: string): File {
         this.storageBucket = this.storageBucket || this.storage.bucket(configService.gcp_storage_bucket_name);
         return this.storageBucket.file(uniqueFilename);
     }
@@ -38,11 +39,11 @@ class StorageService {
             throw new BadRequestError('Not enough storage');
         }
 
-        const filePrefix = storageService.getUniqueFilePrefix();
+        const filePrefix = this.getUniqueFilePrefix();
 
         const uniqueFilename = `${filePrefix}/${file.originalname}`;
 
-        const fileReference = storageService.getFileReference(uniqueFilename);
+        const fileReference = this.getFileReference(uniqueFilename);
 
         await fileReference.save(file.buffer);
 
@@ -79,6 +80,23 @@ class StorageService {
         const fileReference = this.getFileReference(uniqueFilename);
         await fileReference.delete();
         await fileMeta.deleteOne();
+    }
+
+    async getFileStreamData(fileId: string): Promise<FileStreamData> {
+        const fileMeta = await FileMeta.findById(fileId);
+
+        if (!fileMeta) {
+            throw new NotFoundError('file not found');
+        }
+
+        const uniqueFilename = `${fileMeta.prefix}/${fileMeta.filename}`;
+
+        const fileReference = this.getFileReference(uniqueFilename);
+
+        return {
+            fileMeta,
+            readStream: fileReference.createReadStream()
+        };
     }
 }
 

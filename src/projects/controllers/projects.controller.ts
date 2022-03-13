@@ -11,7 +11,7 @@ import {multerMiddleware} from "../../common/middlewares/multer.middleware";
 import {Types} from "mongoose";
 import {
     Auth0Request,
-    FileStream,
+    FileStreamData,
     ProjectAuthorization
 } from "../../common/types/interfaces";
 import {FileCategory, ProjectMemberRole} from "../../common/types/enums";
@@ -245,11 +245,11 @@ class ProjectsController {
     async getProjectImage(request: Auth0Request, response: Response) {
         try {
 
-            // loading the project data before loading its file is not needed atm but the project id
-            // will be in request.params.id
-            const fileStream: FileStream = await dbService.getFileStream(FileCategory.Images, request.params.fileId);
-            response.header('Content-Disposition', `filename="${fileStream.file.filename}"`);
-            fileStream.stream.pipe(response);
+            const fileStreamData: FileStreamData = await storageService.getFileStreamData(request.params.fileId);
+
+            response.header('Content-Disposition', `filename="${fileStreamData.fileMeta.filename}"`);
+
+            fileStreamData.readStream.pipe(response);
         } catch (error) {
 
             response.status(errorHandlerService.getStatusCode(error)).send(error);
@@ -324,20 +324,11 @@ class ProjectsController {
     async getProjectAttachment(request: Auth0Request, response: Response) {
         try {
 
-            const fileMeta = await FileMeta.findById(request.params.fileId);
+            const fileStreamData: FileStreamData = await storageService.getFileStreamData(request.params.fileId);
 
-            if (!fileMeta) {
-                const error = new NotFoundError('file not found');
-                return response.status(errorHandlerService.getStatusCode(error)).send(error);
-            }
+            response.header('Content-Disposition', `filename="${fileStreamData.fileMeta.filename}"`);
 
-            const uniqueFilename = `${fileMeta.prefix}/${fileMeta.filename}`;
-
-            const fileReference = storageService.getFileReference(uniqueFilename);
-
-            response.header('Content-Disposition', `filename="${request.params.filename}"`);
-
-            fileReference.createReadStream().pipe(response);
+            fileStreamData.readStream.pipe(response);
         } catch (error) {
 
             response.status(errorHandlerService.getStatusCode(error)).send(error);
