@@ -11,9 +11,7 @@ import {multerMiddleware} from "../../common/middlewares/multer.middleware";
 import {Types} from "mongoose";
 import {
     Auth0Request,
-    FileOptions,
     FileStream,
-    FileUploadResult,
     ProjectAuthorization
 } from "../../common/types/interfaces";
 import {FileCategory, ProjectMemberRole} from "../../common/types/enums";
@@ -24,9 +22,6 @@ import { queryService } from '../../common/services/query.service';
 import { projectsJoiService } from '../services/projects-joi.service';
 import { storageService } from '../../common/services/storage.service';
 import { FileMeta } from '../../file-meta/models/file-meta.model';
-import { StorageMeta } from '../../storage-meta/models/storage-meta.model';
-import { configService } from '../../common/services/config.service';
-import { fileMetaQueryService } from '../../file-meta/services/file-meta-query.service';
 
 class ProjectsController {
     async createProject(request: Auth0Request, response: Response) {
