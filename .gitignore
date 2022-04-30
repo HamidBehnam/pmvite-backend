@@ -1,6 +1,5 @@
 dist
 .idea
 node_modules
-.env
 .m2m.cache
 logs

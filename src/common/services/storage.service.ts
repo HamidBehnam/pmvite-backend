@@ -54,6 +54,7 @@ class StorageService {
         if (fileData && fileData.metadata) {
             const fileMeta = {
                 filename: file.originalname,
+                contentType: fileData.metadata.contentType,
                 size: fileData.metadata.size,
                 prefix: filePrefix,
                 uploadedBy: uploaderUserId,

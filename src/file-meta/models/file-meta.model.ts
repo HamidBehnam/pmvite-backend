@@ -2,6 +2,7 @@ import {Document, model, Model, Schema} from "mongoose";
 
 export interface IFileMeta extends Document {
     filename: string;
+    contentType: string;
     prefix: string;
     uploadedBy: string;
     storageOwner: string;
@@ -12,6 +13,10 @@ export interface IFileMeta extends Document {
 
 const FileMetaSchema: Schema = new Schema({
     filename: {
+        type: String,
+        required: true
+    },
+    contentType: {
         type: String,
         required: true
     },
