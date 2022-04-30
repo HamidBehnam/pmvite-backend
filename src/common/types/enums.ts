@@ -30,11 +30,6 @@ export enum WorkStatus {
     Accepted = 'accepted'
 }
 
-export enum FileCategory {
-    Images = 'images',
-    Attachments = 'attachments'
-}
-
 export enum UserStatistic {
     ActiveTasksStat = 'activeTasksStat',
     AcceptedTasksStat = 'acceptedTasksStat',

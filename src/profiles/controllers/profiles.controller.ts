@@ -5,10 +5,12 @@ import {Email} from "../../emails/models/emails.model";
 import {configService} from "../../common/services/config.service";
 import {profilesQueryService} from "../services/profiles-query.service";
 import {multerMiddleware} from "../../common/middlewares/multer.middleware";
-import {dbService} from "../../common/services/db.service";
 import {Types} from "mongoose";
-import {Auth0MetaData, Auth0Request, FileOptions, FileStream, FileUploadResult} from "../../common/types/interfaces";
-import {FileCategory} from "../../common/types/enums";
+import {
+    Auth0MetaData,
+    Auth0Request,
+    FileStreamData,
+} from "../../common/types/interfaces";
 import {errorHandlerService} from "../../common/services/error-handler.service";
 import {BadRequestError, NotFoundError} from "../../common/types/errors";
 import { Member } from '../../members/models/members.model';
@@ -16,6 +18,8 @@ import { queryService } from '../../common/services/query.service';
 import { Project } from '../../projects/models/projects.model';
 import { Task } from '../../tasks/models/tasks.model';
 import { profilesJoiService } from '../services/profiles-joi.service';
+import { StorageMeta } from '../../storage-meta/models/storage-meta.model';
+import { storageService } from '../../common/services/storage.service';
 
 class ProfilesController {
      async createProfile(request: Auth0Request, response: Response, next: NextFunction) {
@@ -40,8 +44,14 @@ class ProfilesController {
                 email: request.user[`${configService.auth0_custom_rule_namespace}email`]
             };
 
+            const storageData = {
+                userId: request.user.sub,
+                capacity: + configService.storage_default_capacity
+            };
+
             const userProfile = await Profile.create(profileData);
             const userEmail = await Email.create(emailData);
+            const userStorage = await StorageMeta.create(storageData);
 
             // todo: the following approach in terms of adding the profile status to the token might be useful for
             //  insensitive scenarios like f/e scenarios but might not work for all the b/e scenarios because we can't
@@ -187,7 +197,7 @@ class ProfilesController {
              });
 
              if (foundProfile.image) {
-                 await dbService.deleteFile(FileCategory.Images, foundProfile.image.toString());
+                 await storageService.deleteFile(foundProfile.image.toString());
              }
 
              await foundProfile.deleteOne();
@@ -241,31 +251,20 @@ class ProfilesController {
                     return response.status(errorHandlerService.getStatusCode(error)).send(error);
                 }
 
-                const fileOptions: FileOptions = {
-                    gridFSBucketWriteStreamOptions: {
-                        metadata: {
-                            profile: profile._id
-                        }
-                    }
-                };
-
-                const fileUploadResult: FileUploadResult =
-                    await dbService.saveFile(FileCategory.Images, request.file, fileOptions);
-
                 const oldImageId = profile.image;
 
+                const createdFileMeta = await storageService.uploadFile(request.user.sub, request.user.sub, request.file);
+
                 await profile.updateOne({
-                    image: fileUploadResult.id
+                    image: createdFileMeta._id
                 });
 
                 if (oldImageId) {
 
-                    await dbService.deleteFile(FileCategory.Images, (oldImageId as Types.ObjectId).toString());
+                    await storageService.deleteFile(oldImageId.toString());
                 }
 
-                const file = await dbService.getFile(FileCategory.Images, fileUploadResult.id);
-
-                response.status(201).send(file);
+                response.status(201).send(createdFileMeta);
             } catch (error) {
 
                 response.status(errorHandlerService.getStatusCode(error)).send(error);
@@ -286,7 +285,7 @@ class ProfilesController {
                  return response.status(errorHandlerService.getStatusCode(error)).send(error);
              }
 
-             await dbService.deleteFile(FileCategory.Images, request.params.fileId);
+             await storageService.deleteFile(request.params.fileId);
 
              await profile.updateOne({
                  $unset: {
@@ -308,9 +307,11 @@ class ProfilesController {
 
              // loading the profile data before loading its file is not needed atm but the profile id
              // will be in request.params.id
-             const fileStream: FileStream = await dbService.getFileStream(FileCategory.Images, request.params.fileId);
-             response.header('Content-Disposition', `filename="${fileStream.file.filename}"`);
-             fileStream.stream.pipe(response);
+             const fileStreamData: FileStreamData = await storageService.getFileStreamData(request.params.fileId);
+
+             response.header('Content-Disposition', `filename="${fileStreamData.fileMeta.filename}"`);
+
+             fileStreamData.readStream.pipe(response);
          } catch (error) {
 
              response.status(errorHandlerService.getStatusCode(error)).send(error);

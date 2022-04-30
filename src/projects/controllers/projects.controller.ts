@@ -6,22 +6,21 @@ import {projectAuthorizationService} from "../services/project-authorization.ser
 import {Member} from "../../members/models/members.model";
 import {winstonService} from "../../common/services/winston.service";
 import {projectsQueryService} from "../services/projects-query.service";
-import {dbService} from "../../common/services/db.service";
 import {multerMiddleware} from "../../common/middlewares/multer.middleware";
 import {Types} from "mongoose";
 import {
     Auth0Request,
-    FileOptions,
-    FileStream,
-    FileUploadResult,
+    FileStreamData,
     ProjectAuthorization
 } from "../../common/types/interfaces";
-import {FileCategory, ProjectMemberRole} from "../../common/types/enums";
+import {ProjectMemberRole} from "../../common/types/enums";
 import {errorHandlerService} from "../../common/services/error-handler.service";
-import {BadRequestError} from "../../common/types/errors";
+import { BadRequestError, NotFoundError } from "../../common/types/errors";
 import {Task} from "../../tasks/models/tasks.model";
 import { queryService } from '../../common/services/query.service';
 import { projectsJoiService } from '../services/projects-joi.service';
+import { storageService } from '../../common/services/storage.service';
+import { FileMeta } from '../../file-meta/models/file-meta.model';
 
 class ProjectsController {
     async createProject(request: Auth0Request, response: Response) {
@@ -154,12 +153,12 @@ class ProjectsController {
             });
 
             if (projectAuthorization.project.image) {
-                await dbService.deleteFile(FileCategory.Images, projectAuthorization.project.image.toString());
+                await storageService.deleteFile(projectAuthorization.project.image.toString());
             }
 
             // using global.Promise to avoid getting the typescript warning suggesting that it needs to be imported.
             await global.Promise.all((projectAuthorization.project.attachments as Types.ObjectId[])
-                .map((attachment) => dbService.deleteFile(FileCategory.Attachments, attachment.toString())));
+                .map((attachment) => storageService.deleteFile(attachment.toString())));
 
             await projectAuthorization.project.deleteOne();
 
@@ -192,31 +191,20 @@ class ProjectsController {
                     ProjectMemberRole.Admin
                 );
 
-                const fileOptions: FileOptions = {
-                    gridFSBucketWriteStreamOptions: {
-                        metadata: {
-                            project: projectAuthorization.project._id
-                        }
-                    }
-                };
-
-                const fileUploadResult: FileUploadResult =
-                    await dbService.saveFile(FileCategory.Images, request.file, fileOptions);
-
                 const oldImageId = projectAuthorization.project.image;
 
+                const createdFileMeta = await storageService.uploadFile(request.user.sub, projectAuthorization.project.createdBy, request.file);
+
                 await projectAuthorization.project.updateOne({
-                    image: fileUploadResult.id
+                    image: createdFileMeta._id
                 });
 
                 if (oldImageId) {
 
-                    await dbService.deleteFile(FileCategory.Images, (oldImageId as Types.ObjectId).toString());
+                    await storageService.deleteFile(oldImageId.toString());
                 }
 
-                const file = await dbService.getFile(FileCategory.Images, fileUploadResult.id);
-
-                response.status(201).send(file);
+                response.status(201).send(createdFileMeta);
             } catch (error) {
 
                 response.status(errorHandlerService.getStatusCode(error)).send(error);
@@ -234,7 +222,7 @@ class ProjectsController {
                 ProjectMemberRole.Admin
             );
 
-            await dbService.deleteFile(FileCategory.Images, request.params.fileId);
+            await storageService.deleteFile(request.params.fileId);
 
             await projectAuthorization.project.updateOne({
                 $unset: {
@@ -254,11 +242,11 @@ class ProjectsController {
     async getProjectImage(request: Auth0Request, response: Response) {
         try {
 
-            // loading the project data before loading its file is not needed atm but the project id
-            // will be in request.params.id
-            const fileStream: FileStream = await dbService.getFileStream(FileCategory.Images, request.params.fileId);
-            response.header('Content-Disposition', `filename="${fileStream.file.filename}"`);
-            fileStream.stream.pipe(response);
+            const fileStreamData: FileStreamData = await storageService.getFileStreamData(request.params.fileId);
+
+            response.header('Content-Disposition', `filename="${fileStreamData.fileMeta.filename}"`);
+
+            fileStreamData.readStream.pipe(response);
         } catch (error) {
 
             response.status(errorHandlerService.getStatusCode(error)).send(error);
@@ -285,33 +273,21 @@ class ProjectsController {
                     ProjectMemberRole.Developer
                 );
 
-                const fileOptions: FileOptions = {
-                    gridFSBucketWriteStreamOptions: {
-                        metadata: {
-                            project: projectAuthorization.project._id
-                        }
-                    }
-                };
-
-                const fileUploadResult: FileUploadResult =
-                    await dbService.saveFile(FileCategory.Attachments, request.file, fileOptions);
+                const createdFileMeta = await storageService.uploadFile(request.user.sub, projectAuthorization.project.createdBy, request.file);
 
                 await projectAuthorization.project.updateOne({
                     $push: {
-                        attachments: fileUploadResult.id
+                        attachments: createdFileMeta._id
                     }
                 });
 
-                const file = await dbService.getFile(FileCategory.Attachments, fileUploadResult.id);
-
-                response.status(201).send(file);
+                response.status(201).send(createdFileMeta);
             } catch (error) {
 
                 response.status(errorHandlerService.getStatusCode(error)).send(error);
             }
         });
     }
-
 
     async deleteProjectAttachment(request: Auth0Request, response: Response) {
 
@@ -323,7 +299,7 @@ class ProjectsController {
                 ProjectMemberRole.Developer
             );
 
-            await dbService.deleteFile(FileCategory.Attachments, request.params.fileId);
+            await storageService.deleteFile(request.params.fileId);
 
             await projectAuthorization.project.updateOne({
                 $pull: {
@@ -343,11 +319,11 @@ class ProjectsController {
     async getProjectAttachment(request: Auth0Request, response: Response) {
         try {
 
-            // loading the project data before loading its file is not needed atm but the project id
-            // will be in request.params.id
-            const fileStream: FileStream = await dbService.getFileStream(FileCategory.Attachments, request.params.fileId);
-            response.header('Content-Disposition', `filename="${fileStream.file.filename}"`);
-            fileStream.stream.pipe(response);
+            const fileStreamData: FileStreamData = await storageService.getFileStreamData(request.params.fileId);
+
+            response.header('Content-Disposition', `filename="${fileStreamData.fileMeta.filename}"`);
+
+            fileStreamData.readStream.pipe(response);
         } catch (error) {
 
             response.status(errorHandlerService.getStatusCode(error)).send(error);
@@ -359,7 +335,7 @@ class ProjectsController {
 
             // loading the project data before loading its file is not needed atm but the project id
             // will be in request.params.id
-            const file = await dbService.getFile(FileCategory.Attachments, request.params.fileId);
+            const file = await FileMeta.findById(request.params.fileId);
 
             response.status(200).send(file);
         } catch (error) {
@@ -373,6 +349,13 @@ class ProjectsController {
 
             const operations = [];
 
+            const fileMeta = await FileMeta.findById(request.params.fileId);
+
+            if (!fileMeta) {
+                const error = new NotFoundError('file not found');
+                return response.status(errorHandlerService.getStatusCode(error)).send(error);
+            }
+
             const projectAuthorization: ProjectAuthorization = await projectAuthorizationService.authorize(
                 request.user.sub,
                 request.params.id,
@@ -381,38 +364,37 @@ class ProjectsController {
 
             if (request.body.filename) {
 
-                const file = await dbService.getFile(FileCategory.Attachments, request.params.fileId);
-                const currentFilename = file.filename;
-                const extensionIndex = currentFilename.lastIndexOf('.');
-                const currentFileExtension = extensionIndex !== -1 ? currentFilename.slice(extensionIndex) : '';
+                const uniqueFilename = `${fileMeta.prefix}/${fileMeta.filename}`;
+                const fileReference = storageService.getFileReference(uniqueFilename);
+                const extensionIndex = fileMeta.filename.lastIndexOf('.');
+                const currentFileExtension = extensionIndex !== -1 ? fileMeta.filename.slice(extensionIndex) : '';
 
-                operations.push(dbService.renameFile(
-                    FileCategory.Attachments,
-                    request.params.fileId,
-                    request.body.filename
-                        .concat(currentFileExtension)
-                ));
+                const newUniqueFilename = `${fileMeta.prefix}/${request.body.filename + currentFileExtension}`;
+
+                operations.push(fileReference.rename(newUniqueFilename));
+                operations.push(fileMeta.updateOne({
+                    filename: request.body.filename + currentFileExtension
+                }));
             }
 
             if (request.body.description) {
-                operations.push(dbService.updateFileDescription(
-                    FileCategory.Attachments,
-                    request.params.fileId,
-                    request.body.description
-                ));
+                operations.push(fileMeta.updateOne({
+                    description: request.body.description
+                }));
             }
 
             if (request.body.description === '') {
-                operations.push(dbService.deleteFileDescription(
-                    FileCategory.Attachments,
-                    request.params.fileId
-                ));
+                operations.push(fileMeta.updateOne({
+                    $unset: {
+                        description: 1
+                    }
+                }));
             }
 
             await global.Promise.all(operations);
 
             // returning the updated file to avoid doing the data processing in f/e to update the f/e store
-            const updatedFile = await dbService.getFile(FileCategory.Attachments, request.params.fileId)
+            const updatedFile = await FileMeta.findById(request.params.fileId);
 
             response.status(200).send(updatedFile);
         } catch (error) {

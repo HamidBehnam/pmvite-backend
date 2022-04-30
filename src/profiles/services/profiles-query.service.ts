@@ -17,7 +17,7 @@ class ProfilesQueryService {
         return [
             {
                 $lookup: {
-                    from: 'images.files',
+                    from: 'filemetas',
                     localField: 'image',
                     foreignField: '_id',
                     as: 'image'

@@ -1,5 +1,5 @@
 import {model, Model, Document, Schema, Types} from "mongoose";
-import {IGridFSFile} from "../../common/services/gridfs-model-builder.service";
+import { IFileMeta } from '../../file-meta/models/file-meta.model';
 
 export interface IProfile extends Document{
     // the userId here is the user's id in Auth0.
@@ -9,7 +9,7 @@ export interface IProfile extends Document{
     title: string;
     description: string;
     originalImageLink: string;
-    image: Types.ObjectId | IGridFSFile;
+    image: Types.ObjectId | IFileMeta;
 }
 
 const ProfileSchema: Schema = new Schema({
@@ -38,7 +38,7 @@ const ProfileSchema: Schema = new Schema({
     },
     image: {
         type: Types.ObjectId,
-        ref: 'Image'
+        ref: 'FileMeta'
     }
 }, {
     toJSON: {
