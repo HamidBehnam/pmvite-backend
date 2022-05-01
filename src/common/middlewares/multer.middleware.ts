@@ -38,7 +38,7 @@ class MulterMiddleware {
         this.attachmentMulterCore = multer({
             storage: this.storage,
             limits: {
-                fileSize: 5000000,
+                fileSize: 105906176,
                 fields: 0,
                 files: 1,
                 parts: 1
@@ -46,6 +46,7 @@ class MulterMiddleware {
             fileFilter(req: Auth0Request, file: Express.Multer.File, callback: multer.FileFilterCallback) {
                 const acceptableFileTypes = [
                     'application/pdf',
+                    'application/json',
                     'application/msword',
                     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                     'application/vnd.ms-powerpoint',
@@ -62,7 +63,7 @@ class MulterMiddleware {
                 }
 
                 callback(new BadRequestError(
-                    'acceptable files: *.pdf, *.doc, *.docx, *.ppt, *.pptx, *.xls, *xlsx, *.png, *.jpeg, *.jpg, *.txt'
+                    'acceptable files: *.pdf, *.doc, *.docx, *.ppt, *.pptx, *.xls, *xlsx, *.png, *.jpeg, *.jpg, *.txt, *.json'
                 ));
             }
         });
